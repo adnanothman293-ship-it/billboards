@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1b2d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="لوحات اعلانية">
+<title>لوحات اعلانية</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f1b2d'/%3E%3Crect x='10' y='12' width='44' height='26' rx='4' fill='%23f5a524'/%3E%3Crect x='29' y='38' width='6' height='16' fill='%23fff'/%3E%3Crect x='20' y='52' width='24' height='4' rx='2' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy:#0f1b2d; --navy2:#1b2d4a; --amber:#f5a524; --amber2:#ffbf47;
+  --bg:#f2f4f8; --card:#fff; --text:#16202e; --muted:#6b7686; --line:#e6e9ef;
+  --green:#16a34a; --green-bg:#e8f7ee; --red:#dc2626; --red-bg:#fdecec;
+  --blue:#2563eb; --blue-bg:#e8effd; --orange:#d97706; --orange-bg:#fff4e0;
+  --radius:16px; --shadow:0 6px 20px rgba(15,27,45,.08);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:'Tajawal',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:16px;min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+button,input,select,textarea{font-family:inherit;font-size:16px}
+.hidden{display:none!important}
+
+/* top bar */
+.topbar{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+.topbar .title{flex:1;font-weight:800;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .sub{font-size:12px;opacity:.7;font-weight:500}
+.icon-btn{background:rgba(255,255,255,.12);border:0;color:#fff;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;cursor:pointer;position:relative;font-size:19px;flex-shrink:0}
+.icon-btn:active{transform:scale(.94)}
+.badge-dot{position:absolute;top:-4px;left:-4px;background:var(--red);color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;padding:0 5px;border:2px solid var(--navy)}
+
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+.screen{animation:fadeUp .28s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* cards */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 12px;font-size:17px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.stat{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;position:relative;overflow:hidden;cursor:pointer}
+.stat .n{font-size:26px;font-weight:800;margin-top:4px}
+.stat .l{font-size:13px;color:var(--muted);font-weight:500}
+.stat::after{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:5px;background:var(--c,var(--amber))}
+.stat.wide{grid-column:1/-1}
+.money-row{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-top:6px;color:var(--muted)}
+.money-row b{color:var(--text)}
+
+/* list items */
+.item{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px;display:flex;gap:12px;align-items:center;cursor:pointer;transition:transform .12s}
+.item:active{transform:scale(.985)}
+.item .ic{width:46px;height:46px;border-radius:13px;background:var(--orange-bg);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+.item .body{flex:1;min-width:0}
+.item .t{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .s{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.5}
+.chev{color:#b5bcc8;font-size:18px}
+
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.tag.green{background:var(--green-bg);color:var(--green)}
+.tag.red{background:var(--red-bg);color:var(--red)}
+.tag.blue{background:var(--blue-bg);color:var(--blue)}
+.tag.orange{background:var(--orange-bg);color:var(--orange)}
+.tag.gray{background:#eef0f4;color:var(--muted)}
+
+/* forms */
+label{display:block;font-size:14px;font-weight:700;margin:12px 0 6px;color:#334155}
+input,select,textarea{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fbfcfe;color:var(--text);outline:none;transition:border .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--amber);background:#fff}
+textarea{min-height:80px;resize:vertical}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.row2>div{min-width:0}
+input[type=date]{min-width:0;-webkit-appearance:none;appearance:none;min-height:50px}
+.hint{font-size:12px;color:var(--muted);margin-top:5px}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:13px;padding:14px 16px;font-weight:700;font-size:16px;cursor:pointer;transition:transform .1s,opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.55}
+.btn.primary{background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--navy);box-shadow:0 6px 16px rgba(245,165,36,.35)}
+.btn.dark{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff}
+.btn.green{background:var(--green);color:#fff}
+.btn.wa{background:#25d366;color:#fff;box-shadow:0 6px 16px rgba(37,211,102,.35)}
+.btn.light{background:#eef1f6;color:var(--text)}
+.btn.danger{background:var(--red-bg);color:var(--red)}
+.btn.sm{width:auto;padding:9px 14px;font-size:14px;border-radius:11px}
+.btns{display:flex;gap:10px;margin-top:16px}
+.btns .btn{flex:1}
+
+.msg{padding:12px 14px;border-radius:12px;font-size:14px;margin-top:12px;font-weight:500}
+.msg.err{background:var(--red-bg);color:var(--red)}
+.msg.ok{background:var(--green-bg);color:var(--green)}
+
+/* info grid */
+.info{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.info div{background:#f7f8fb;border-radius:12px;padding:10px 12px}
+.info .k{font-size:12px;color:var(--muted);font-weight:500}
+.info .v{font-weight:700;margin-top:3px;word-break:break-word}
+.info .full{grid-column:1/-1}
+
+/* search */
+.search{display:flex;gap:8px;margin-bottom:14px}
+.search input{flex:1}
+.search select{width:auto;min-width:120px}
+
+/* tabs */
+.tabs{display:flex;gap:6px;background:#e5e9f0;padding:5px;border-radius:14px;margin-bottom:14px;overflow-x:auto}
+.tabs button{flex:1;border:0;background:transparent;padding:10px 8px;border-radius:10px;font-weight:700;font-size:14px;color:var(--muted);white-space:nowrap;cursor:pointer}
+.tabs button.on{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+
+/* payments */
+.pay{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+.pay:last-child{border-bottom:0}
+.pay .num{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:#eef1f6;flex-shrink:0}
+.pay.paid .num{background:var(--green);color:#fff}
+.pay.late .num{background:var(--red);color:#fff}
+.pay .b{flex:1;min-width:0}
+.pay .a{font-weight:800}
+.pay .d{font-size:13px;color:var(--muted);margin-top:2px}
+.progress{height:10px;background:#e8ebf1;border-radius:6px;overflow:hidden;margin:10px 0 4px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#22c55e);border-radius:6px;transition:width .5s}
+
+.sched-row{display:grid;grid-template-columns:34px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
+.sched-row .n{font-weight:800;text-align:center;color:var(--muted)}
+.sched-row input{padding:10px}
+.sumline{display:flex;justify-content:space-between;font-weight:700;padding:10px 12px;border-radius:12px;margin-top:6px}
+
+/* bottom nav */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:30;box-shadow:0 -6px 20px rgba(0,0,0,.06)}
+.bnav button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:700;color:var(--muted);padding:6px 0;cursor:pointer}
+.bnav button span{font-size:22px;filter:grayscale(1);opacity:.6}
+.bnav button.on{color:var(--navy)}
+.bnav button.on span{filter:none;opacity:1}
+
+.fab{position:fixed;left:18px;bottom:calc(92px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:18px;border:0;background:linear-gradient(135deg,var(--amber),var(--amber2));color:var(--navy);font-size:30px;font-weight:800;box-shadow:0 10px 24px rgba(245,165,36,.45);z-index:25;cursor:pointer}
+.fab:active{transform:scale(.92)}
+
+.empty{text-align:center;color:var(--muted);padding:36px 12px}
+.empty .e{font-size:44px;margin-bottom:8px}
+.section-t{font-weight:800;font-size:15px;margin:18px 4px 10px;color:#334155;display:flex;justify-content:space-between;align-items:center}
+
+/* login */
+.login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:24px;background:radial-gradient(circle at 20% 0%,#2a4370 0%,var(--navy) 55%)}
+.login .box{background:#fff;border-radius:24px;padding:26px 22px;max-width:420px;width:100%;margin:0 auto;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.logo{width:76px;height:76px;margin:0 auto 12px;display:block;filter:drop-shadow(0 8px 16px rgba(0,0,0,.2))}
+.login h1{text-align:center;margin:0;font-size:26px;font-weight:800}
+.login p{text-align:center;color:var(--muted);margin:6px 0 14px}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(10,18,30,.55);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto;animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px)}to{transform:none}}
+.modal h3{margin:0 0 6px;font-size:19px}
+.wa-preview{background:#e7fbe9;border-radius:14px;padding:14px;white-space:pre-line;line-height:1.8;font-size:15px;margin:12px 0;border:1px solid #c6efcc}
+
+.toast{position:fixed;top:calc(80px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 18px;border-radius:14px;font-weight:700;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:fadeUp .25s;max-width:90%;text-align:center}
+.spinner{width:34px;height:34px;border:4px solid #e3e7ee;border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.notif{border-inline-start:4px solid var(--amber)}
+.notif.read{border-inline-start-color:transparent;opacity:.7}
+.pill-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+/* ============ إعداد ============ */
+const SUPABASE_URL = 'https://msdmbwblpncvbiwjgiqf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zZG1id2JscG5jdmJpd2pnaXFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0NTc1ODEsImV4cCI6MjEwOTAzMzU4MX0.18wQelt_x8xx9T8iRtHjacX5JhQej_cSN6612mk6ra8';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const GOVS = ['بغداد','البصرة','نينوى','أربيل','السليمانية','دهوك','كركوك','الأنبار','ديالى','صلاح الدين','بابل','كربلاء','النجف','واسط','القادسية','ميسان','ذي قار','المثنى','حلبجة'];
+const LOGO = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="16" fill="#0f1b2d"/><rect x="9" y="11" width="46" height="27" rx="5" fill="#f5a524"/><rect x="14" y="16" width="20" height="4" rx="2" fill="#0f1b2d" opacity=".55"/><rect x="14" y="24" width="30" height="3" rx="1.5" fill="#0f1b2d" opacity=".35"/><rect x="29" y="38" width="6" height="15" fill="#fff"/><rect x="19" y="51" width="26" height="4" rx="2" fill="#fff"/></svg>`;
+
+let ME = null;            // profile
+let NAV = [];             // stack
+let CURRENT = null;
+let notifTimer = null;
+
+/* ============ أدوات ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Number(n || 0).toLocaleString('en-US', {maximumFractionDigits: 2});
+const money = (n, cur) => fmt(n) + (cur === 'USD' ? ' $' : ' د.ع');
+const today = () => new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Baghdad'});
+const addDays = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+function addMonths(d, n){
+  const [y, m, day] = d.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1 + n, 1));
+  const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+  t.setUTCDate(Math.min(day, last));
+  return t.toISOString().slice(0, 10);
+}
+const diffDays =(a, b) => Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000);
+const isAdmin = () => ME && ME.role === 'admin';
+const roleName = r => r === 'admin' ? 'مدير' : 'مدخل بيانات';
+function dateAr(d){ if(!d) return '—'; const [y,m,dd] = d.split('-'); return `${dd}/${m}/${y}`; }
+function durationText(s, e){
+  if(!s || !e) return '';
+  const days = diffDays(s, e) + 1;
+  if (days < 1) return '';
+  const months = Math.round(days / 30.44);
+  if (days >= 28 && Math.abs(days - months * 30.44) <= 4){
+    if (months % 12 === 0) { const y = months/12; return y === 1 ? 'سنة' : y === 2 ? 'سنتان' : y + ' سنوات'; }
+    return months === 1 ? 'شهر' : months === 2 ? 'شهران' : months <= 10 ? months + ' أشهر' : months + ' شهر';
+  }
+  return days === 1 ? 'يوم واحد' : days + ' يوم';
+}
+function phoneIntl(p){
+  let d = String(p || '').replace(/[^\d]/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.startsWith('0')) d = '964' + d.slice(1);
+  else if (d.length === 10 && d.startsWith('7')) d = '964' + d;
+  return d;
+}
+function toast(t){ const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 2600); }
+function errMsg(e){
+  const m = (e && (e.message || e.error_description || e.error)) || String(e);
+  if (/Invalid login/i.test(m)) return 'الإيميل أو كلمة المرور غير صحيحة';
+  if (/Failed to fetch|NetworkError|network/i.test(m)) return 'تعذّر الاتصال بالإنترنت، حاول مرة ثانية';
+  if (/JWT|session/i.test(m)) return 'انتهت الجلسة، سجّل الدخول من جديد';
+  return m;
+}
+window.addEventListener('error', e => { console.error(e.error || e.message); });
+window.addEventListener('unhandledrejection', e => { console.error(e.reason); toast('⚠️ ' + errMsg(e.reason)); });
+
+/* ============ تنقل ============ */
+function go(name, params = {}, replace = false){
+  if (CURRENT && !replace) NAV.push(CURRENT);
+  CURRENT = {name, params};
+  render();
+}
+function goBack(){ CURRENT = NAV.pop() || {name: 'home', params: {}}; render(); }
+function goRoot(name){ NAV = []; CURRENT = {name, params: {}}; render(); }
+
+function shell(title, sub, content, opts = {}){
+  const back = NAV.length ? `<button class="icon-btn" onclick="goBack()" aria-label="رجوع">➜</button>` : '';
+  const bell = isAdmin() ? `<button class="icon-btn" onclick="go('notifs')" aria-label="الإشعارات">🔔<span id="bellCount" class="badge-dot hidden">0</span></button>` : '';
+  const out = `<button class="icon-btn" onclick="logout()" aria-label="خروج" title="تسجيل الخروج">⎋</button>`;
+  const root = CURRENT.name;
+  const tabs = isAdmin()
+    ? [['home','🏠','الرئيسية'],['boards','🪧','اللوحات'],['payments','💵','الدفعات'],['users','👥','الحسابات']]
+    : [['boards','🪧','اللوحات']];
+  const navBar = tabs.length > 1 ? `<nav class="bnav">${tabs.map(t => `<button class="${opts.tab === t[0] ? 'on' : ''}" onclick="goRoot('${t[0]}')"><span>${t[1]}</span>${t[2]}</button>`).join('')}</nav>` : '';
+  $('#root').innerHTML = `
+    <div class="topbar">${back}<div class="title">${esc(title)}${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div>${bell}${out}</div>
+    <div class="wrap screen" id="main">${content}</div>
+    ${opts.fab ? `<button class="fab" onclick="${opts.fab}" aria-label="إضافة">+</button>` : ''}
+    ${navBar}`;
+  if (tabs.length <= 1) document.body.style.paddingBottom = '24px'; else document.body.style.paddingBottom = '';
+  refreshBell();
+}
+const loading = () => `<div class="spinner"></div>`;
+
+async function render(){
+  window.scrollTo(0, 0);
+  const {name, params} = CURRENT;
+  try {
+    const fn = SCREENS[name];
+    if (!fn) return goRoot(isAdmin() ? 'home' : 'boards');
+    await fn(params);
+  } catch (e) {
+    console.error(e);
+    const m = $('#main');
+    if (m) m.innerHTML = `<div class="msg err">حدث خطأ: ${esc(errMsg(e))}</div><button class="btn light" style="margin-top:12px" onclick="render()">🔄 إعادة المحاولة</button>`;
+  }
+}
+
+/* ============ دخول ============ */
+function loginScreen(msg = ''){
+  document.body.style.paddingBottom = '0';
+  $('#root').innerHTML = `
+  <div class="login">
+    <div class="box screen">
+      <div class="logo">${LOGO}</div>
+      <h1>لوحات اعلانية</h1>
+      <p>نظام إدارة اللوحات وعقود الزبائن</p>
+      <form id="lf" onsubmit="doLogin(event)">
+        <label>البريد الإلكتروني</label>
+        <input id="le" type="email" autocomplete="username" inputmode="email" required placeholder="name@gmail.com">
+        <label>كلمة المرور</label>
+        <input id="lp" type="password" autocomplete="current-password" required placeholder="••••••">
+        <button class="btn primary" id="lb" style="margin-top:18px">تسجيل الدخول</button>
+        <div id="lm" class="msg err ${msg ? '' : 'hidden'}">${esc(msg)}</div>
+      </form>
+    </div>
+  </div>`;
+}
+async function doLogin(e){
+  e.preventDefault();
+  const b = $('#lb'), m = $('#lm');
+  b.disabled = true; b.textContent = 'جاري الدخول...'; m.classList.add('hidden');
+  try {
+    const {error} = await sb.auth.signInWithPassword({email: $('#le').value.trim().toLowerCase(), password: $('#lp').value});
+    if (error) throw error;
+    await boot();
+  } catch (err) {
+    m.textContent = errMsg(err); m.classList.remove('hidden');
+    b.disabled = false; b.textContent = 'تسجيل الدخول';
+  }
+}
+async function logout(){
+  if (!confirm('تسجيل الخروج؟')) return;
+  clearInterval(notifTimer);
+  await sb.auth.signOut();
+  ME = null; NAV = []; CURRENT = null;
+  loginScreen();
+}
+async function boot(){
+  const {data: {session}} = await sb.auth.getSession();
+  if (!session) return loginScreen();
+  const {data: prof, error} = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+  if (error || !prof) { await sb.auth.signOut(); return loginScreen('هذا الحساب غير مفعّل في النظام'); }
+  ME = prof; NAV = [];
+  CURRENT = {name: isAdmin() ? 'home' : 'boards', params: {}};
+  render();
+  if (isAdmin()) {
+    sb.rpc('generate_payment_reminders').then(refreshBell);
+    clearInterval(notifTimer);
+    notifTimer = setInterval(refreshBell, 60000);
+  }
+}
+async function refreshBell(){
+  if (!isAdmin()) return;
+  const {count} = await sb.from('notifications').select('id', {count: 'exact', head: true}).eq('is_read', false);
+  const el = $('#bellCount'); if (!el) return;
+  if (count > 0) { el.textContent = count > 99 ? '99+' : count; el.classList.remove('hidden'); } else el.classList.add('hidden');
+}
+
+/* ============ بيانات مشتركة ============ */
+async function fetchBoardsWithStatus(){
+  const {data: boards, error} = await sb.from('billboards').select('*').order('created_at', {ascending: false}).limit(1000);
+  if (error) throw error;
+  let status = {};
+  if (isAdmin()) {
+    const t = today();
+    const {data: cs, error: ce} = await sb.from('contracts').select('id,billboard_id,company_name,start_date,end_date').gte('end_date', t).order('start_date').limit(2000);
+    if (ce) throw ce;
+    for (const c of cs) {
+      const s = status[c.billboard_id];
+      if (c.start_date <= t) status[c.billboard_id] = {k: 'rented', c};
+      else if (!s) status[c.billboard_id] = {k: 'reserved', c};
+    }
+  }
+  return {boards, status};
+}
+function statusTag(st){
+  if (!isAdmin()) return '';
+  if (!st) return `<span class="tag green">متاحة</span>`;
+  if (st.k === 'rented') return `<span class="tag orange">مؤجّرة</span>`;
+  return `<span class="tag blue">محجوزة من ${dateAr(st.c.start_date)}</span>`;
+}
+function boardItem(b, st){
+  return `<div class="item" onclick="go('board',{id:${b.id}})">
+    <div class="ic">🪧</div>
+    <div class="body">
+      <div class="t">${esc(b.governorate)} — ${esc(b.address)}</div>
+      <div class="s">📐 ${fmt(b.width)} × ${fmt(b.height)} م &nbsp;·&nbsp; 🏢 ${esc(b.owner_name)}</div>
+      ${isAdmin() ? `<div style="margin-top:6px">${statusTag(st)}${st && st.k === 'rented' ? ` <span class="s">${esc(st.c.company_name)} حتى ${dateAr(st.c.end_date)}</span>` : ''}</div>` : ''}
+    </div><span class="chev">‹</span></div>`;
+}
+async function fetchOpenPayments(){
+  const {data, error} = await sb.from('payments')
+    .select('id,seq,amount,due_date,paid,contract_id,contracts(id,company_name,campaign_name,currency,payments_count,customer_phone,billboards(governorate,address))')
+    .eq('paid', false).order('due_date').limit(1000);
+  if (error) throw error;
+  return data;
+}
+function payItem(p){
+  const c = p.contracts || {}, t = today();
+  const late = p.due_date < t, soon = !late && p.due_date <= addDays(t, 2);
+  const tag = late ? `<span class="tag red">متأخرة ${diffDays(p.due_date, t)} يوم</span>`
+    : p.due_date === t ? `<span class="tag orange">اليوم</span>`
+    : soon ? `<span class="tag orange">خلال 48 ساعة</span>` : `<span class="tag gray">${dateAr(p.due_date)}</span>`;
+  return `<div class="item" onclick="go('contract',{id:${p.contract_id}})">
+    <div class="ic" style="background:${late ? 'var(--red-bg)' : 'var(--green-bg)'}">💵</div>
+    <div class="body"><div class="t">${esc(c.company_name)} — ${esc(c.campaign_name)}</div>
+      <div class="s">الدفعة ${p.seq} من ${c.payments_count} · <b style="color:var(--text)">${money(p.amount, c.currency)}</b> · ${dateAr(p.due_date)}</div>
+      <div style="margin-top:6px">${tag}</div></div><span class="chev">‹</span></div>`;
+}
+
+/* ============ الشاشات ============ */
+const SCREENS = {};
+
+/* الرئيسية (مدير) */
+SCREENS.home = async () => {
+  shell('لوحات اعلانية', 'أهلاً ' + ME.full_name, loading(), {tab: 'home'});
+  const [{boards, status}, open, paidRes] = await Promise.all([
+    fetchBoardsWithStatus(), fetchOpenPayments(),
+    sb.from('payments').select('amount,contracts(currency)').eq('paid', true).limit(5000)
+  ]);
+  if (paidRes.error) throw paidRes.error;
+  const t = today();
+  const rented = boards.filter(b => status[b.id] && status[b.id].k === 'rented').length;
+  const late = open.filter(p => p.due_date < t);
+  const soon = open.filter(p => p.due_date >= t && p.due_date <= addDays(t, 2));
+  const week = open.filter(p => p.due_date >= t && p.due_date <= addDays(t, 7));
+  const sum = (arr, cur, f) => arr.filter(x => ((f ? f(x) : x.contracts) || {}).currency === cur).reduce((a, x) => a + Number(x.amount), 0);
+  const collIQD = sum(paidRes.data, 'IQD'), collUSD = sum(paidRes.data, 'USD');
+  const remIQD = sum(open, 'IQD'), remUSD = sum(open, 'USD');
+  const line = (iqd, usd) => [iqd ? money(iqd, 'IQD') : '', usd ? money(usd, 'USD') : ''].filter(Boolean).join(' + ') || '0';
+
+  $('#main').innerHTML = `
+    <div class="stats">
+      <div class="stat" style="--c:var(--navy)" onclick="goRoot('boards')"><div class="l">عدد اللوحات</div><div class="n">${boards.length}</div></div>
+      <div class="stat" style="--c:var(--green)" onclick="goRoot('boards')"><div class="l">متاحة الآن</div><div class="n">${boards.length - rented}</div></div>
+      <div class="stat" style="--c:var(--orange)" onclick="goRoot('boards')"><div class="l">مؤجّرة الآن</div><div class="n">${rented}</div></div>
+      <div class="stat" style="--c:var(--red)" onclick="go('payments',{tab:'late'})"><div class="l">دفعات متأخرة</div><div class="n">${late.length}</div></div>
+      <div class="stat wide" style="--c:var(--amber)">
+        <div class="l">ملخص مالي</div>
+        <div class="money-row"><span>المستلَم</span><b style="color:var(--green)">${line(collIQD, collUSD)}</b></div>
+        <div class="money-row"><span>المتبقّي</span><b>${line(remIQD, remUSD)}</b></div>
+        <div class="money-row"><span>مستحق خلال 7 أيام</span><b style="color:var(--orange)">${line(sum(week,'IQD'), sum(week,'USD'))}</b></div>
+      </div>
+    </div>
+    ${late.length ? `<div class="section-t">🔴 دفعات متأخرة</div>${late.slice(0, 5).map(payItem).join('')}${late.length > 5 ? `<button class="btn light" onclick="go('payments',{tab:'late'})">عرض الكل (${late.length})</button>` : ''}` : ''}
+    <div class="section-t">⏰ مستحقة خلال 48 ساعة</div>
+    ${soon.length ? soon.map(payItem).join('') : `<div class="card empty" style="padding:22px"><div class="e">✅</div>لا توجد دفعات مستحقة خلال يومين</div>`}
+    <div class="btns"><button class="btn dark" onclick="go('boardForm')">➕ لوحة جديدة</button><button class="btn primary" onclick="goRoot('boards')">🪧 كل اللوحات</button></div>`;
+};
+
+/* قائمة اللوحات */
+SCREENS.boards = async (p) => {
+  shell('اللوحات', isAdmin() ? '' : 'أهلاً ' + ME.full_name, loading(), {tab: 'boards', fab: "go('boardForm')"});
+  const {boards, status} = await fetchBoardsWithStatus();
+  const govs = [...new Set(boards.map(b => b.governorate))];
+  $('#main').innerHTML = `
+    <div class="search">
+      <input id="bq" placeholder="🔍 بحث بالعنوان أو صاحب البناية" oninput="filterBoards()">
+      <select id="bg" onchange="filterBoards()"><option value="">كل المحافظات</option>${govs.map(g => `<option>${esc(g)}</option>`).join('')}</select>
+    </div>
+    ${isAdmin() ? `<div class="tabs" id="bst">
+      <button class="on" data-k="" onclick="setBStat(this)">الكل</button>
+      <button data-k="free" onclick="setBStat(this)">متاحة</button>
+      <button data-k="rented" onclick="setBStat(this)">مؤجّرة</button>
+      <button data-k="reserved" onclick="setBStat(this)">محجوزة</button></div>` : ''}
+    <div id="blist"></div>`;
+  window._boards = {boards, status};
+  filterBoards();
+};
+let BSTAT = '';
+function setBStat(btn){ document.querySelectorAll('#bst button').forEach(x => x.classList.remove('on')); btn.classList.add('on'); BSTAT = btn.dataset.k; filterBoards(); }
+function filterBoards(){
+  const {boards, status} = window._boards || {boards: [], status: {}};
+  const q = ($('#bq')?.value || '').trim(), g = $('#bg')?.value || '';
+  const list = boards.filter(b => {
+    if (g && b.governorate !== g) return false;
+    if (q && !(`${b.address} ${b.owner_name} ${b.governorate}`.includes(q))) return false;
+    if (BSTAT) { const s = status[b.id]; if (BSTAT === 'free' ? !!s : !(s && s.k === BSTAT)) return false; }
+    return true;
+  });
+  $('#blist').innerHTML = list.length ? list.map(b => boardItem(b, status[b.id])).join('')
+    : `<div class="empty"><div class="e">🪧</div>${boards.length ? 'لا توجد نتائج' : 'لا توجد لوحات بعد<br>اضغط + لإضافة أول لوحة'}</div>`;
+}
+
+/* إضافة / تعديل لوحة */
+SCREENS.boardForm = async ({id}) => {
+  let b = {governorate: 'بغداد', address: '', width: '', height: '', annual_rent: '', owner_name: '', contract_date: '', notes: ''};
+  if (id) { const r = await sb.from('billboards').select('*').eq('id', id).single(); if (r.error) throw r.error; b = r.data; }
+  shell(id ? 'تعديل لوحة' : 'لوحة جديدة', 'بيانات إنشاء اللوحة', `
+    <form class="card" onsubmit="saveBoard(event, ${id || 0})">
+      <label>المحافظة</label>
+      <select id="f_gov">${GOVS.map(g => `<option ${g === b.governorate ? 'selected' : ''}>${g}</option>`).join('')}</select>
+      <label>العنوان</label>
+      <input id="f_addr" required value="${esc(b.address)}" placeholder="مثال: شارع فلسطين قرب ساحة بيروت">
+      <div class="row2">
+        <div><label>الطول (م)</label><input id="f_w" type="number" step="0.01" min="0.01" inputmode="decimal" required value="${esc(b.width)}"></div>
+        <div><label>العرض (م)</label><input id="f_h" type="number" step="0.01" min="0.01" inputmode="decimal" required value="${esc(b.height)}"></div>
+      </div>
+      <label>الإيجار السنوي (د.ع)</label>
+      <input id="f_rent" type="number" min="0" step="1" inputmode="numeric" required value="${esc(b.annual_rent)}">
+      <label>اسم صاحب البناية</label>
+      <input id="f_owner" required value="${esc(b.owner_name)}">
+      <label>تاريخ توقيع العقد</label>
+      <input id="f_cd" type="date" required value="${esc(b.contract_date || '')}">
+      <label>ملاحظات (اختياري)</label>
+      <textarea id="f_notes">${esc(b.notes || '')}</textarea>
+      <button class="btn primary" id="f_btn" style="margin-top:18px">💾 حفظ اللوحة</button>
+      <div id="f_msg" class="msg err hidden"></div>
+    </form>`);
+};
+async function saveBoard(e, id){
+  e.preventDefault();
+  const btn = $('#f_btn'), m = $('#f_msg');
+  const row = {
+    governorate: $('#f_gov').value, address: $('#f_addr').value.trim(),
+    width: Number($('#f_w').value), height: Number($('#f_h').value),
+    annual_rent: Number($('#f_rent').value), owner_name: $('#f_owner').value.trim(),
+    contract_date: $('#f_cd').value || null, notes: $('#f_notes').value.trim() || null
+  };
+  if (!row.address || !row.owner_name) { m.textContent = 'أكمل الحقول المطلوبة'; m.classList.remove('hidden'); return; }
+  btn.disabled = true; btn.textContent = 'جاري الحفظ...'; m.classList.add('hidden');
+  try {
+    let res;
+    if (id) res = await sb.from('billboards').update(row).eq('id', id).select('id').single();
+    else res = await sb.from('billboards').insert({...row, created_by: ME.id}).select('id').single();
+    if (res.error) throw res.error;
+    toast('✅ تم حفظ اللوحة');
+    if (id) goBack(); else go('board', {id: res.data.id}, true);
+  } catch (err) { m.textContent = errMsg(err); m.classList.remove('hidden'); btn.disabled = false; btn.textContent = '💾 حفظ اللوحة'; }
+}
+
+/* تفاصيل لوحة */
+SCREENS.board = async ({id}) => {
+  shell('تفاصيل اللوحة', '', loading());
+  const {data: b, error} = await sb.from('billboards').select('*, profiles:created_by(full_name)').eq('id', id).single();
+  if (error) throw error;
+  let contractsHtml = '';
+  const t = today();
+  if (isAdmin()) {
+    const {data: cs, error: ce} = await sb.from('contracts').select('*, payments(amount,paid,due_date)').eq('billboard_id', id).order('start_date', {ascending: false});
+    if (ce) throw ce;
+    contractsHtml = `<div class="section-t"><span>📄 عقود الزبائن (${cs.length})</span><button class="btn primary sm" onclick="go('contractForm',{billboard_id:${id}})">➕ عقد جديد</button></div>` +
+      (cs.length ? cs.map(c => {
+        const paid = c.payments.filter(p => p.paid).reduce((a, p) => a + Number(p.amount), 0);
+        const lateN = c.payments.filter(p => !p.paid && p.due_date < t).length;
+        const st = c.start_date > t ? `<span class="tag blue">قادم</span>` : c.end_date < t ? `<span class="tag gray">منتهي</span>` : `<span class="tag orange">جاري</span>`;
+        return `<div class="item" onclick="go('contract',{id:${c.id}})"><div class="ic" style="background:var(--blue-bg)">📄</div>
+          <div class="body"><div class="t">${esc(c.company_name)} — ${esc(c.campaign_name)}</div>
+          <div class="s">${dateAr(c.start_date)} ← ${dateAr(c.end_date)} · ${money(c.contract_value, c.currency)}</div>
+          <div style="margin-top:6px">${st} <span class="tag ${paid >= c.contract_value ? 'green' : 'gray'}">مدفوع ${money(paid, c.currency)}</span> ${lateN ? `<span class="tag red">${lateN} متأخرة</span>` : ''}</div></div><span class="chev">‹</span></div>`;
+      }).join('') : `<div class="card empty" style="padding:22px"><div class="e">📄</div>لا توجد عقود على هذه اللوحة</div>`);
+  }
+  const canEdit = isAdmin() || b.created_by === ME.id;
+  $('#main').innerHTML = `
+    <div class="card">
+      <h3>🪧 ${esc(b.governorate)} — ${esc(b.address)}</h3>
+      <div class="info">
+        <div><div class="k">المحافظة</div><div class="v">${esc(b.governorate)}</div></div>
+        <div><div class="k">القياس (طول × عرض)</div><div class="v">${fmt(b.width)} × ${fmt(b.height)} م</div></div>
+        <div class="full"><div class="k">العنوان</div><div class="v">${esc(b.address)}</div></div>
+        <div><div class="k">الإيجار السنوي</div><div class="v">${money(b.annual_rent, 'IQD')}</div></div>
+        <div><div class="k">صاحب البناية</div><div class="v">${esc(b.owner_name)}</div></div>
+        <div><div class="k">تاريخ توقيع العقد</div><div class="v">${dateAr(b.contract_date)}</div></div>
+        <div><div class="k">أضافها</div><div class="v">${esc(b.profiles?.full_name || '—')}</div></div>
+        ${b.notes ? `<div class="full"><div class="k">ملاحظات</div><div class="v">${esc(b.notes)}</div></div>` : ''}
+      </div>
+      ${canEdit ? `<div class="pill-actions"><button class="btn light sm" onclick="go('boardForm',{id:${id}})">✏️ تعديل</button>${isAdmin() ? `<button class="btn danger sm" onclick="deleteBoard(${id})">🗑️ حذف اللوحة</button>` : ''}</div>` : ''}
+    </div>
+    ${contractsHtml}`;
+};
+async function deleteBoard(id){
+  if (!confirm('حذف اللوحة نهائياً مع كل عقودها ودفعاتها؟')) return;
+  const {error} = await sb.from('billboards').delete().eq('id', id);
+  if (error) return toast('⚠️ ' + errMsg(error));
+  toast('تم حذف اللوحة'); goBack();
+}
+
+/* عقد زبون جديد / تعديل */
+let SCHED = [];
+SCREENS.contractForm = async ({billboard_id, id}) => {
+  let c = {company_name: '', campaign_name: '', duration_text: '', start_date: today(), end_date: addDays(today(), 29), customer_phone: '', contract_value: '', currency: 'IQD', payments_count: 1};
+  if (id) { const r = await sb.from('contracts').select('*').eq('id', id).single(); if (r.error) throw r.error; c = r.data; billboard_id = c.billboard_id; }
+  const {data: b} = await sb.from('billboards').select('governorate,address').eq('id', billboard_id).single();
+  SCHED = [];
+  shell(id ? 'تعديل العقد' : 'عقد زبون جديد', b ? `${b.governorate} — ${b.address}` : '', `
+    <form class="card" onsubmit="saveContract(event, ${billboard_id}, ${id || 0})">
+      <label>اسم الشركة</label><input id="c_co" required value="${esc(c.company_name)}">
+      <label>اسم الحملة</label><input id="c_ca" required value="${esc(c.campaign_name)}">
+      <div class="row2">
+        <div><label>تاريخ بداية الحملة</label><input id="c_s" type="date" required value="${c.start_date}" onchange="onDates()"></div>
+        <div><label>تاريخ نهاية الحملة</label><input id="c_e" type="date" required value="${c.end_date}" onchange="onDates()"></div>
+      </div>
+      <label>مدة الحملة</label><input id="c_d" value="${esc(c.duration_text || durationText(c.start_date, c.end_date))}" placeholder="تُحسب تلقائياً">
+      <label>رقم هاتف الزبون (واتساب)</label><input id="c_ph" type="tel" inputmode="tel" required value="${esc(c.customer_phone)}" placeholder="07XXXXXXXXX">
+      <div class="row2">
+        <div><label>قيمة العقد</label><input id="c_v" type="number" min="0" step="1" inputmode="numeric" required value="${esc(c.contract_value)}" ${id ? '' : 'oninput="rebuildSched()"'}></div>
+        <div><label>العملة</label><select id="c_cur" ${id ? '' : 'onchange="drawSched()"'}><option value="IQD" ${c.currency === 'IQD' ? 'selected' : ''}>دينار عراقي</option><option value="USD" ${c.currency === 'USD' ? 'selected' : ''}>دولار</option></select></div>
+      </div>
+      ${id ? `<div class="hint">لتعديل مبلغ أو موعد دفعة، استخدم زر ✏️ بجانبها في صفحة العقد.</div>` : `
+      <div class="row2">
+        <div><label>عدد الدفعات</label><input id="c_n" type="number" min="1" max="120" step="1" inputmode="numeric" required value="${c.payments_count}" oninput="rebuildSched()"></div>
+        <div><label>تاريخ أول دفعة</label><input id="c_f" type="date" required value="${c.start_date}" onchange="rebuildSched()"></div>
+      </div>
+      <label>الدفعة تكون كل</label>
+      <select id="c_every" onchange="rebuildSched()">
+        ${[[1,'شهر'],[2,'شهرين'],[3,'3 أشهر'],[4,'4 أشهر'],[5,'5 أشهر'],[6,'6 أشهر'],[7,'7 أشهر'],[8,'8 أشهر'],[9,'9 أشهر'],[10,'10 أشهر'],[11,'11 شهر'],[12,'سنة']].map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}
+      </select>
+      <div class="hint">المدير يحدد تاريخ أول دفعة وكل كم شهر تكون الدفعة، والباقي ينحسب تلقائياً.</div>
+      <div class="section-t" style="margin-inline:0">📅 جدول الدفعات <button type="button" class="btn light sm" onclick="rebuildSched()">↻ إعادة التوزيع</button></div>
+      <div class="hint" style="margin-bottom:8px">تقدر تغيّر تاريخ أو مبلغ أي دفعة يدوياً قبل الحفظ.</div>
+      <div id="sched"></div>`}
+      <div id="c_warn"></div>
+      <button class="btn primary" id="c_btn" style="margin-top:18px">💾 حفظ العقد</button>
+      <div id="c_msg" class="msg err hidden"></div>
+    </form>`);
+  if (!id) rebuildSched();
+  checkOverlap(billboard_id, id);
+};
+function onDates(){
+  const s = $('#c_s').value, e = $('#c_e').value;
+  $('#c_d').value = durationText(s, e);
+  const f = document.querySelector('form[onsubmit^="saveContract"]');
+  const m = f && f.getAttribute('onsubmit').match(/saveContract\(event, (\d+), (\d+)\)/);
+  if (m) checkOverlap(+m[1], +m[2]);
+}
+async function checkOverlap(bid, cid){
+  const s = $('#c_s')?.value, e = $('#c_e')?.value; const w = $('#c_warn'); if (!s || !e || !w) return;
+  let q = sb.from('contracts').select('company_name,start_date,end_date').eq('billboard_id', bid).lte('start_date', e).gte('end_date', s);
+  if (cid) q = q.neq('id', cid);
+  const {data} = await q;
+  w.innerHTML = data && data.length ? `<div class="msg err">⚠️ اللوحة محجوزة بنفس الفترة: ${data.map(x => `${esc(x.company_name)} (${dateAr(x.start_date)} ← ${dateAr(x.end_date)})`).join('، ')}</div>` : '';
+}
+function rebuildSched(){
+  const v = Math.max(0, Math.round(Number($('#c_v').value) || 0));
+  const n = Math.min(120, Math.max(1, parseInt($('#c_n').value) || 1));
+  const first = $('#c_f').value || $('#c_s').value || today();
+  const every = Math.max(1, parseInt($('#c_every')?.value) || 1);
+  const base = Math.floor(v / n);
+  SCHED = Array.from({length: n}, (_, i) => ({amount: base + (i === n - 1 ? v - base * n : 0), due_date: addMonths(first, i * every)}));
+  drawSched();
+}
+function drawSched(){
+  const el = $('#sched'); if (!el) return;
+  const cur = $('#c_cur').value;
+  el.innerHTML = SCHED.map((p, i) => `<div class="sched-row"><div class="n">${i + 1}</div>
+    <input type="number" min="0" step="1" inputmode="numeric" value="${p.amount}" oninput="SCHED[${i}].amount=Number(this.value)||0;sumSched()">
+    <input type="date" value="${p.due_date}" onchange="SCHED[${i}].due_date=this.value"></div>`).join('') + `<div id="ssum"></div>`;
+  sumSched();
+}
+function sumSched(){
+  const v = Math.round(Number($('#c_v').value) || 0), cur = $('#c_cur').value;
+  const t = SCHED.reduce((a, p) => a + Number(p.amount), 0);
+  const ok = t === v;
+  $('#ssum').innerHTML = `<div class="sumline" style="background:${ok ? 'var(--green-bg)' : 'var(--red-bg)'};color:${ok ? 'var(--green)' : 'var(--red)'}">
+    <span>مجموع الدفعات</span><span>${money(t, cur)} ${ok ? '✓' : `(الفرق ${money(v - t, cur)})`}</span></div>`;
+}
+async function saveContract(e, bid, id){
+  e.preventDefault();
+  const btn = $('#c_btn'), m = $('#c_msg'); m.classList.add('hidden');
+  const c = {
+    company_name: $('#c_co').value.trim(), campaign_name: $('#c_ca').value.trim(),
+    start_date: $('#c_s').value, end_date: $('#c_e').value,
+    duration_text: $('#c_d').value.trim() || durationText($('#c_s').value, $('#c_e').value),
+    customer_phone: $('#c_ph').value.trim(), contract_value: Math.round(Number($('#c_v').value) || 0),
+    currency: $('#c_cur').value
+  };
+  const fail = t => { m.textContent = t; m.classList.remove('hidden'); };
+  if (c.end_date < c.start_date) return fail('تاريخ النهاية قبل تاريخ البداية');
+  if (phoneIntl(c.customer_phone).length < 11) return fail('رقم الهاتف غير صحيح');
+  if (!id) {
+    if (SCHED.reduce((a, p) => a + Number(p.amount), 0) !== c.contract_value) return fail('مجموع الدفعات لازم يساوي قيمة العقد');
+    if (SCHED.some(p => !p.due_date)) return fail('كل دفعة تحتاج تاريخ');
+  }
+  btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+  try {
+    if (id) {
+      const {error} = await sb.from('contracts').update(c).eq('id', id);
+      if (error) throw error;
+      toast('✅ تم تعديل العقد'); goBack();
+    } else {
+      const {data: newId, error} = await sb.rpc('create_contract_with_payments', {c: {...c, billboard_id: bid, payments_count: SCHED.length}, p: SCHED});
+      if (error) throw error;
+      toast('✅ تم حفظ العقد');
+      CURRENT = {name: 'contract', params: {id: newId}}; render();
+    }
+  } catch (err) { fail(errMsg(err)); btn.disabled = false; btn.textContent = '💾 حفظ العقد'; }
+}
+
+/* تفاصيل عقد + الدفعات */
+SCREENS.contract = async ({id}) => {
+  shell('تفاصيل العقد', '', loading());
+  const {data: c, error} = await sb.from('contracts').select('*, billboards(id,governorate,address), payments(*)').eq('id', id).single();
+  if (error) throw error;
+  c.payments.sort((a, b) => a.seq - b.seq);
+  window._contract = c;
+  const t = today();
+  const paid = c.payments.filter(p => p.paid).reduce((a, p) => a + Number(p.amount), 0);
+  const total = c.payments.reduce((a, p) => a + Number(p.amount), 0);
+  const pct = c.contract_value > 0 ? Math.min(100, Math.round(paid / c.contract_value * 100)) : 100;
+  const st = c.start_date > t ? `<span class="tag blue">قادم</span>` : c.end_date < t ? `<span class="tag gray">منتهي</span>` : `<span class="tag orange">جاري</span>`;
+  $('#main').innerHTML = `
+    <div class="card">
+      <h3>📄 ${esc(c.company_name)} ${st}</h3>
+      <div class="info">
+        <div><div class="k">اسم الشركة</div><div class="v">${esc(c.company_name)}</div></div>
+        <div><div class="k">اسم الحملة</div><div class="v">${esc(c.campaign_name)}</div></div>
+        <div><div class="k">بداية الحملة</div><div class="v">${dateAr(c.start_date)}</div></div>
+        <div><div class="k">نهاية الحملة</div><div class="v">${dateAr(c.end_date)}</div></div>
+        <div><div class="k">مدة الحملة</div><div class="v">${esc(c.duration_text || durationText(c.start_date, c.end_date))}</div></div>
+        <div><div class="k">هاتف الزبون</div><div class="v"><a href="tel:${esc(c.customer_phone)}" style="color:var(--blue)">${esc(c.customer_phone)}</a></div></div>
+        <div><div class="k">قيمة العقد</div><div class="v">${money(c.contract_value, c.currency)}</div></div>
+        <div><div class="k">عدد الدفعات</div><div class="v">${c.payments_count}</div></div>
+        <div class="full" style="cursor:pointer" onclick="go('board',{id:${c.billboards.id}})"><div class="k">اللوحة</div><div class="v">🪧 ${esc(c.billboards.governorate)} — ${esc(c.billboards.address)} ‹</div></div>
+      </div>
+      <div class="progress"><i style="width:${pct}%"></i></div>
+      <div class="money-row"><span>مدفوع <b style="color:var(--green)">${money(paid, c.currency)}</b></span><span>${pct}%</span><span>متبقّي <b>${money(c.contract_value - paid, c.currency)}</b></span></div>
+      ${total !== Number(c.contract_value) ? `<div class="msg err">⚠️ مجموع الدفعات (${money(total, c.currency)}) لا يساوي قيمة العقد</div>` : ''}
+      <div class="pill-actions">
+        <button class="btn light sm" onclick="go('contractForm',{id:${c.id}})">✏️ تعديل</button>
+        <button class="btn wa sm" onclick="openWA(${c.id}, null, 'hello')">💬 واتساب</button>
+        <button class="btn danger sm" onclick="deleteContract(${c.id})">🗑️ حذف</button>
+      </div>
+    </div>
+    <div class="card"><h3>💵 الدفعات</h3>
+      ${c.payments.map(p => {
+        const late = !p.paid && p.due_date < t;
+        return `<div class="pay ${p.paid ? 'paid' : late ? 'late' : ''}">
+          <div class="num">${p.paid ? '✓' : p.seq}</div>
+          <div class="b"><div class="a">${money(p.amount, c.currency)}</div>
+            <div class="d">${p.paid ? `دُفعت ${dateAr(new Date(p.paid_at).toLocaleDateString('en-CA', {timeZone: 'Asia/Baghdad'}))}` : `الموعد ${dateAr(p.due_date)}${late ? ` · <b style="color:var(--red)">متأخرة ${diffDays(p.due_date, t)} يوم</b>` : ''}`}</div></div>
+          ${p.paid
+            ? `<button class="btn light sm" onclick="openWA(${c.id}, ${p.id}, 'paid')" title="إعادة إرسال">💬</button><button class="btn light sm" onclick="unpay(${p.id})" title="إلغاء الدفع">↩️</button>`
+            : `<button class="btn light sm" onclick="editPay(${p.id})" title="تعديل">✏️</button><button class="btn green sm" onclick="markPaid(${p.id})">✔ تسجيل الدفع</button>`}
+        </div>`;
+      }).join('')}
+    </div>`;
+};
+function waText(c, p, kind){
+  const cur = c.currency;
+  if (kind === 'hello') {
+    const next = c.payments.find(x => !x.paid);
+    return `مرحباً ${c.company_name} 🌟\nبخصوص حملة "${c.campaign_name}"` + (next ? `\nالدفعة القادمة: ${money(next.amount, cur)} بتاريخ ${dateAr(next.due_date)}` : '');
+  }
+  if (kind === 'remind') return `مرحباً ${c.company_name} 🌟\nنذكّركم بموعد الدفعة رقم (${p.seq}) لحملة "${c.campaign_name}"\nالمبلغ: ${money(p.amount, cur)}\nالموعد: ${dateAr(p.due_date)}\nشكراً لكم 🙏`;
+  const next = c.payments.filter(x => !x.paid && x.id !== p.id).sort((a, b) => a.seq - b.seq)[0];
+  let t = `مرحباً ${c.company_name} 🌟\nتم دفع الدفعة (${money(p.amount, cur)})\nحملة "${c.campaign_name}" — الدفعة ${p.seq} من ${c.payments_count}`;
+  t += next ? `\n\nالدفعة القادمة: ${money(next.amount, cur)}\nموعدها: ${dateAr(next.due_date)}` : `\n\n✅ تم تسديد كامل مبلغ العقد`;
+  return t + `\n\nشكراً لتعاملكم معنا 🙏`;
+}
+function openWA(cid, pid, kind){
+  const c = window._contract; if (!c || c.id !== cid) return;
+  const p = pid ? c.payments.find(x => x.id === pid) : null;
+  const text = waText(c, p, kind);
+  const url = `https://wa.me/${phoneIntl(c.customer_phone)}?text=${encodeURIComponent(text)}`;
+  modal(`<h3>${kind === 'paid' ? '✅ تم تسجيل الدفع' : '💬 رسالة للزبون'}</h3>
+    <div class="hint">راح تنفتح الرسالة جاهزة على رقم الزبون ${esc(c.customer_phone)}، بس اضغط إرسال.</div>
+    <div class="wa-preview">${esc(text)}</div>
+    <a class="btn wa" href="${url}" target="_blank" rel="noopener" onclick="closeModal()">📲 إرسال عبر واتساب</a>
+    <button class="btn light" style="margin-top:10px" onclick="closeModal()">لاحقاً</button>`);
+}
+async function markPaid(pid){
+  const c = window._contract, p = c.payments.find(x => x.id === pid);
+  if (!confirm(`تأكيد استلام الدفعة ${p.seq}: ${money(p.amount, c.currency)}؟`)) return;
+  const {error} = await sb.from('payments').update({paid: true, paid_at: new Date().toISOString(), paid_by: ME.id}).eq('id', pid);
+  if (error) return toast('⚠️ ' + errMsg(error));
+  await sb.from('notifications').update({is_read: true}).eq('payment_id', pid);
+  p.paid = true;
+  await SCREENS.contract({id: c.id});
+  openWA(c.id, pid, 'paid');
+  refreshBell();
+}
+async function unpay(pid){
+  if (!confirm('إلغاء تسجيل هذه الدفعة (ترجع غير مدفوعة)؟')) return;
+  const {error} = await sb.from('payments').update({paid: false, paid_at: null, paid_by: null}).eq('id', pid);
+  if (error) return toast('⚠️ ' + errMsg(error));
+  toast('تم الإلغاء'); render();
+}
+function editPay(pid){
+  const c = window._contract, p = c.payments.find(x => x.id === pid);
+  modal(`<h3>✏️ تعديل الدفعة ${p.seq}</h3>
+    <label>المبلغ</label><input id="ep_a" type="number" min="0" step="1" inputmode="numeric" value="${p.amount}">
+    <label>الموعد</label><input id="ep_d" type="date" value="${p.due_date}">
+    <div class="btns"><button class="btn primary" onclick="savePay(${pid})">💾 حفظ</button><button class="btn light" onclick="closeModal()">إلغاء</button></div>
+    <button class="btn wa" style="margin-top:10px" onclick="closeModal();openWA(${c.id}, ${pid}, 'remind')">💬 تذكير الزبون بهذه الدفعة</button>`);
+}
+async function savePay(pid){
+  const a = Math.round(Number($('#ep_a').value)), d = $('#ep_d').value;
+  if (!(a >= 0) || !d) return toast('أكمل البيانات');
+  const {error} = await sb.from('payments').update({amount: a, due_date: d}).eq('id', pid);
+  if (error) return toast('⚠️ ' + errMsg(error));
+  closeModal(); toast('✅ تم التعديل'); render();
+}
+async function deleteContract(id){
+  if (!confirm('حذف العقد نهائياً مع كل دفعاته؟')) return;
+  const {error} = await sb.from('contracts').delete().eq('id', id);
+  if (error) return toast('⚠️ ' + errMsg(error));
+  toast('تم حذف العقد'); goBack();
+}
+
+/* الدفعات */
+SCREENS.payments = async ({tab = 'soon'}) => {
+  shell('الدفعات', '', loading(), {tab: 'payments'});
+  const open = await fetchOpenPayments();
+  const t = today();
+  const groups = {
+    late: open.filter(p => p.due_date < t),
+    soon: open.filter(p => p.due_date >= t && p.due_date <= addDays(t, 7)),
+    all: open.filter(p => p.due_date >= t)
+  };
+  window._payGroups = groups;
+  $('#main').innerHTML = `<div class="tabs" id="ptabs">
+      <button data-k="late" onclick="showPay('late')">متأخرة (${groups.late.length})</button>
+      <button data-k="soon" onclick="showPay('soon')">خلال 7 أيام (${groups.soon.length})</button>
+      <button data-k="all" onclick="showPay('all')">كل القادمة (${groups.all.length})</button>
+      <button data-k="paid" onclick="showPay('paid')">المستلَمة</button></div><div id="plist"></div>`;
+  showPay(tab);
+};
+async function showPay(k){
+  document.querySelectorAll('#ptabs button').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  CURRENT.params.tab = k;
+  const el = $('#plist');
+  if (k === 'paid') {
+    el.innerHTML = loading();
+    const {data, error} = await sb.from('payments').select('id,seq,amount,due_date,paid_at,contract_id,contracts(company_name,campaign_name,currency,payments_count)').eq('paid', true).order('paid_at', {ascending: false}).limit(100);
+    if (error) { el.innerHTML = `<div class="msg err">${esc(errMsg(error))}</div>`; return; }
+    el.innerHTML = data.length ? data.map(p => `<div class="item" onclick="go('contract',{id:${p.contract_id}})"><div class="ic" style="background:var(--green-bg)">✅</div>
+      <div class="body"><div class="t">${esc(p.contracts.company_name)} — ${esc(p.contracts.campaign_name)}</div>
+      <div class="s">الدفعة ${p.seq} من ${p.contracts.payments_count} · <b style="color:var(--green)">${money(p.amount, p.contracts.currency)}</b> · استُلمت ${dateAr(new Date(p.paid_at).toLocaleDateString('en-CA', {timeZone: 'Asia/Baghdad'}))}</div></div><span class="chev">‹</span></div>`).join('')
+      : `<div class="empty"><div class="e">💵</div>لا توجد دفعات مستلمة بعد</div>`;
+    return;
+  }
+  const list = window._payGroups[k] || [];
+  el.innerHTML = list.length ? list.map(payItem).join('') : `<div class="empty"><div class="e">✅</div>لا توجد دفعات هنا</div>`;
+}
+
+/* الإشعارات */
+SCREENS.notifs = async () => {
+  shell('الإشعارات', 'تذكير قبل موعد الدفعة بـ 48 ساعة', loading());
+  await sb.rpc('generate_payment_reminders');
+  const {data, error} = await sb.from('notifications').select('*').order('created_at', {ascending: false}).limit(100);
+  if (error) throw error;
+  $('#main').innerHTML = (data.length ? `<button class="btn light" style="margin-bottom:12px" onclick="readAll()">✔ تعليم الكل كمقروء</button>` + data.map(n => `
+    <div class="item notif ${n.is_read ? 'read' : ''}" onclick="openNotif(${n.id}, ${n.contract_id || 0})">
+      <div class="ic">⏰</div><div class="body"><div class="t">${esc(n.title)}</div><div class="s">${esc(n.body)}</div>
+      <div class="s" style="font-size:12px">${new Date(n.created_at).toLocaleString('ar-IQ', {timeZone: 'Asia/Baghdad', dateStyle: 'medium', timeStyle: 'short'})}</div></div>
+      ${n.is_read ? '' : '<span class="tag red">جديد</span>'}</div>`).join('')
+    : `<div class="empty"><div class="e">🔔</div>لا توجد إشعارات</div>`);
+};
+async function openNotif(id, cid){
+  await sb.from('notifications').update({is_read: true}).eq('id', id);
+  if (cid) go('contract', {id: cid}); else render();
+}
+async function readAll(){ await sb.from('notifications').update({is_read: true}).eq('is_read', false); render(); }
+
+/* الحسابات */
+SCREENS.users = async () => {
+  shell('الحسابات', 'إدارة حسابات النظام', loading(), {tab: 'users', fab: "go('userForm')"});
+  const {data, error} = await sb.from('profiles').select('*').order('created_at');
+  if (error) throw error;
+  $('#main').innerHTML = data.map(u => `<div class="item" onclick="go('userForm',{id:'${u.id}'})">
+    <div class="ic" style="background:${u.role === 'admin' ? 'var(--blue-bg)' : 'var(--green-bg)'}">${u.role === 'admin' ? '👔' : '📝'}</div>
+    <div class="body"><div class="t">${esc(u.full_name)} ${u.id === ME.id ? '<span class="tag gray">أنت</span>' : ''}</div>
+    <div class="s">${esc(u.email)}</div><div style="margin-top:6px"><span class="tag ${u.role === 'admin' ? 'blue' : 'green'}">${roleName(u.role)}</span></div></div><span class="chev">‹</span></div>`).join('') +
+    `<div class="hint" style="text-align:center;margin-top:8px">👔 المدير يرى ويضيف كل شي · 📝 مدخل البيانات يضيف اللوحات فقط ولا يرى بيانات الزبائن</div>`;
+};
+SCREENS.userForm = async ({id}) => {
+  let u = {full_name: '', email: '', role: 'entry'};
+  if (id) { const r = await sb.from('profiles').select('*').eq('id', id).single(); if (r.error) throw r.error; u = r.data; }
+  shell(id ? 'تعديل حساب' : 'حساب جديد', '', `
+    <form class="card" onsubmit="saveUser(event, '${id || ''}')">
+      <label>الاسم</label><input id="u_n" required value="${esc(u.full_name)}">
+      <label>البريد الإلكتروني</label><input id="u_e" type="email" required value="${esc(u.email)}" autocomplete="off">
+      <label>${id ? 'كلمة مرور جديدة (اتركها فارغة إذا ما تريد تغييرها)' : 'كلمة المرور'}</label>
+      <input id="u_p" type="text" ${id ? '' : 'required'} minlength="6" autocomplete="new-password" placeholder="6 أحرف على الأقل">
+      <label>الصلاحية</label>
+      <select id="u_r" ${id === ME.id ? 'disabled' : ''}>
+        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>مدير — يرى ويضيف كل شي</option>
+        <option value="entry" ${u.role === 'entry' ? 'selected' : ''}>مدخل بيانات — يضيف اللوحات فقط</option>
+      </select>
+      <button class="btn primary" id="u_btn" style="margin-top:18px">💾 حفظ الحساب</button>
+      ${id && id !== ME.id ? `<button type="button" class="btn danger" style="margin-top:10px" onclick="deleteUser('${id}')">🗑️ حذف الحساب</button>` : ''}
+      <div id="u_msg" class="msg err hidden"></div>
+    </form>`);
+};
+async function callManage(body){
+  const {data, error} = await sb.functions.invoke('manage-user', {body});
+  if (error) {
+    let m = error.message;
+    try { const j = await error.context.json(); if (j.error) m = j.error; } catch (_) {}
+    throw new Error(m);
+  }
+  if (data && data.error) throw new Error(data.error);
+  return data;
+}
+async function saveUser(e, id){
+  e.preventDefault();
+  const btn = $('#u_btn'), m = $('#u_msg'); m.classList.add('hidden');
+  const body = {full_name: $('#u_n').value.trim(), email: $('#u_e').value.trim().toLowerCase(), password: $('#u_p').value, role: $('#u_r').value};
+  if (body.password && body.password.length < 6) { m.textContent = 'كلمة المرور 6 أحرف على الأقل'; m.classList.remove('hidden'); return; }
+  btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+  try {
+    if (id) { if (!body.password) delete body.password; if (id === ME.id) delete body.role; await callManage({action: 'update', id, ...body}); }
+    else await callManage({action: 'create', ...body});
+    if (id === ME.id) ME.full_name = body.full_name;
+    toast('✅ تم حفظ الحساب'); goBack();
+  } catch (err) { m.textContent = errMsg(err); m.classList.remove('hidden'); btn.disabled = false; btn.textContent = '💾 حفظ الحساب'; }
+}
+async function deleteUser(id){
+  if (!confirm('حذف هذا الحساب نهائياً؟ (اللوحات اللي أضافها تبقى)')) return;
+  try { await callManage({action: 'delete', id}); toast('تم حذف الحساب'); goBack(); }
+  catch (err) { toast('⚠️ ' + errMsg(err)); }
+}
+
+/* ============ نافذة ============ */
+function modal(html){
+  closeModal();
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal">${html}</div>`;
+  bg.addEventListener('click', ev => { if (ev.target === bg) closeModal(); });
+  document.body.appendChild(bg);
+}
+function closeModal(){ document.querySelectorAll('.modal-bg').forEach(x => x.remove()); }
+
+/* ============ تشغيل ============ */
+sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') { ME = null; loginScreen(); } });
+boot().catch(e => loginScreen(errMsg(e)));
+</script>
+</body>
+</html>
